@@ -1,0 +1,7 @@
+app/CarData/
+
+venv/
+.env/
+
+app/CarData/
+app/car_damage_data.json
