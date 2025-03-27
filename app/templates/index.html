@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Damage Review</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Car Damage Review</h1>
+        <p>Welcome to the Car Damage Review Web App. Click below to start reviewing car damage images.</p>
+        <a href="{{ url_for('review') }}" class="btn">Start Reviewing</a>
+    </div>
+</body>
+</html>

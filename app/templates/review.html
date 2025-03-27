@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Car Damage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Car Damage Review</h1>
+        {% if message %}
+            <p>{{ message }}</p>
+            <a href="{{ url_for('index') }}" class="btn">Back to Home</a>
+        {% else %}
+            <p>Processing image {{ image_path }} (Remaining: {{ total }})</p> -->
+            <div class="image-container">
+                <img src="{{ url_for('serve_image', filename=image_path) }}" alt="Car Image">
+            </div>
+            <label for="caption">Condition Description:</label>
+            <textarea id="caption" rows="10" cols="80">{{ caption }}</textarea>
+            <button id="saveNext" class="btn">Save and Next</button>
+            <p id="status"></p>
+        {% endif %}
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+
+
