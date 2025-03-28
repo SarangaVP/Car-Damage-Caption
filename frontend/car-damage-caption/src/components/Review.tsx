@@ -44,7 +44,7 @@ const Review: React.FC = () => {
   const handleCheck = async () => {
     if (!reviewData || isLoading) return;
     setIsLoading(true);
-    setStatus('Checking with Pixtral...');
+    setStatus('Evaluating...');
     try {
       const response = await axios.post<Partial<ReviewData>>(`${API_BASE_URL}/review`, {
         action: 'check',
@@ -130,6 +130,33 @@ const Review: React.FC = () => {
     }
   };
 
+  const handleDownloadJson = async () => {
+    setIsLoading(true);
+    setStatus('Downloading JSON files...');
+    try {
+      const response = await axios.get(`${API_BASE_URL}/download_json`, {
+        responseType: 'blob', // Important for handling binary data (ZIP file)
+      });
+
+      // Create a URL for the blob and trigger the download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'car_damage_data.zip'); // Match the filename from the backend
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url); // Clean up the URL object
+
+      setStatus('JSON files downloaded successfully');
+    } catch (error) {
+      console.error('Download JSON Error:', error);
+      setStatus(`Error downloading JSON files: ${(error as Error).message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!reviewData && !status) return <div className="spinner"></div>;
 
   return (
@@ -146,6 +173,15 @@ const Review: React.FC = () => {
           onChange={handleFolderUpload}
           disabled={isLoading}
         />
+        {/* Added Download JSON Files button */}
+        <button
+          className="btn btn-primary"
+          onClick={handleDownloadJson}
+          disabled={isLoading}
+          style={{ marginLeft: '10px' }}
+        >
+          Download JSON Files
+        </button>
       </div>
       {reviewData?.done ? (
         <div className="done-message">
@@ -164,7 +200,7 @@ const Review: React.FC = () => {
           </div>
           <div className="form-section">
             <div className="description-card">
-              <label htmlFor="gemma_caption">Gemma Condition Description</label>
+              <label htmlFor="gemma_caption">Generated Description</label>
               <textarea
                 id="gemma_caption"
                 rows={5}
@@ -172,13 +208,13 @@ const Review: React.FC = () => {
                 onChange={(e) => setReviewData({ ...reviewData!, gemma_caption: e.target.value })}
               />
               <div className="evaluation">
-                <p><strong>Gemma Pixtral Evaluation</strong></p>
+                <p><strong>Evaluation</strong></p>
                 <p>Score: {reviewData?.gemma_score !== undefined && reviewData.gemma_score !== null ? `${reviewData.gemma_score}/5` : 'Not evaluated'}</p>
                 {reviewData?.gemma_explanation && <p>{reviewData.gemma_explanation}</p>}
               </div>
             </div>
             <div className="description-card">
-              <label htmlFor="manual_caption">Manual Condition Description</label>
+              <label htmlFor="manual_caption">Manual Description</label>
               <textarea
                 id="manual_caption"
                 rows={5}
@@ -187,14 +223,14 @@ const Review: React.FC = () => {
                 placeholder="Type your own caption here"
               />
               <div className="evaluation">
-                <p><strong>Manual Pixtral Evaluation</strong></p>
+                <p><strong>Evaluation</strong></p>
                 <p>Score: {reviewData?.manual_score !== undefined && reviewData.manual_score !== null ? `${reviewData.manual_score}/5` : 'Not evaluated'}</p>
                 {reviewData?.manual_explanation && <p>{reviewData.manual_explanation}</p>}
               </div>
             </div>
             <div className="button-group">
               <button className="btn btn-primary" onClick={handleCheck} disabled={isLoading}>
-                Check with Pixtral
+                Evaluate
               </button>
               <button className="btn btn-secondary" onClick={handleSave} disabled={isLoading}>
                 Save and Next

@@ -3,7 +3,8 @@ import json
 import base64
 import requests
 import shutil
-from fastapi import FastAPI, HTTPException, File, UploadFile
+import zipfile
+from fastapi import FastAPI, HTTPException, File, UploadFile, BackgroundTasks  
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -22,8 +23,8 @@ app.add_middleware(
 )
 
 root_folder = "CarData"
-generated_json_file = "generated_car_damage_data.json"  
-manual_json_file = "manual_car_damage_data.json"  
+generated_json_file = "generated_car_damage_data.json"
+manual_json_file = "manual_car_damage_data.json"
 OPENROUTER_API_KEY = "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"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 SITE_URL = "<YOUR_SITE_URL>"
@@ -140,7 +141,7 @@ def evaluate_with_pixtral(image_path: str, caption: str) -> dict:
 
 def get_all_images():
     image_extensions = (".jpg", ".jpeg", ".png")
-    generated_data = load_json(generated_json_file)  
+    generated_data = load_json(generated_json_file)
     existing_paths = {entry["image"] for entry in generated_data}
     image_files = []
     for folder_name, _, files in os.walk(root_folder):
@@ -195,7 +196,6 @@ async def post_review(data: ReviewData):
         generated_data = load_json(generated_json_file)
         manual_data = load_json(manual_json_file)
 
-        # Removed pixtral_score from the entries
         generated_entry = {"image": data.image_path, "caption": data.gemma_caption}
         manual_entry = {"image": data.image_path, "caption": data.manual_caption}
 
@@ -203,7 +203,7 @@ async def post_review(data: ReviewData):
         if data.manual_caption:
             manual_data.append(manual_entry)
 
-        save_json(generated_data, generated_json_file) 
+        save_json(generated_data, generated_json_file)
         save_json(manual_data, manual_json_file)
 
         image_files = get_all_images()
@@ -248,3 +248,45 @@ async def upload_folder(files: list[UploadFile] = File(...)):
     finally:
         for file in files:
             file.file.close()
+
+def cleanup_zip_file(zip_filename: str):
+    if os.path.exists(zip_filename):
+        os.remove(zip_filename)
+        print(f"Cleaned up temporary file: {zip_filename}")
+
+@app.get("/download_json")
+async def download_json(background_tasks: BackgroundTasks):
+    zip_filename = "car_damage_data.zip"
+    files_exist = False
+    try:
+        with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            if os.path.exists(generated_json_file):
+                zipf.write(generated_json_file, os.path.basename(generated_json_file))
+                files_exist = True
+            else:
+                print(f"Warning: {generated_json_file} does not exist, skipping.")
+
+            if os.path.exists(manual_json_file):
+                zipf.write(manual_json_file, os.path.basename(manual_json_file))
+                files_exist = True
+            else:
+                print(f"Warning: {manual_json_file} does not exist, skipping.")
+
+        if not files_exist:
+            if os.path.exists(zip_filename):
+                os.remove(zip_filename)
+            raise HTTPException(status_code=404, detail="No JSON files available to download")
+
+        background_tasks.add_task(cleanup_zip_file, zip_filename)
+
+        return FileResponse(
+            zip_filename,
+            media_type='application/zip',
+            filename=zip_filename,
+            headers={"Content-Disposition": f"attachment; filename={zip_filename}"}
+        )
+    except Exception as e:
+        if os.path.exists(zip_filename):
+            os.remove(zip_filename)
+        print(f"Error creating ZIP file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating ZIP file: {str(e)}")
