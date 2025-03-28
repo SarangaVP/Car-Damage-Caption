@@ -91,7 +91,7 @@ const Review: React.FC = () => {
         setReviewData({ ...response.data, gemma_score: null, manual_score: null });
         setManualCaption('');
       }
-      setStatus(response.data.message || `Processed ${reviewData.image_path} (Remaining: ${response.data.total})`);
+      setStatus(response.data.message || 'Saved successfully');
     } catch (error) {
       console.error('Save Error:', error);
       setStatus(`Error saving: ${(error as Error).message}`);
@@ -100,11 +100,53 @@ const Review: React.FC = () => {
     }
   };
 
+  const handleFolderUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsLoading(true);
+    setStatus('Uploading folder...');
+
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => {
+        formData.append('files', file, file.webkitRelativePath || file.name);
+      });
+
+      await axios.post(`${API_BASE_URL}/upload_folder`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setStatus('Folder uploaded successfully! Fetching next image...');
+      await fetchReview();
+    } catch (error) {
+      console.error('Folder Upload Error:', error);
+      setStatus(`Error uploading folder: ${(error as Error).message}`);
+    } finally {
+      setIsLoading(false);
+      event.target.value = '';
+    }
+  };
+
   if (!reviewData && !status) return <div className="spinner"></div>;
 
   return (
     <div className="container">
       <h1>Car Damage Review</h1>
+      <div className="folder-upload-section">
+        <label htmlFor="folder-upload">Upload a Folder of Images</label>
+        <input
+          type="file"
+          id="folder-upload"
+          // @ts-ignore: webkitdirectory is a non-standard attribute
+          webkitdirectory="true"
+          directory="true"
+          onChange={handleFolderUpload}
+          disabled={isLoading}
+        />
+      </div>
       {reviewData?.done ? (
         <div className="done-message">
           <p>{reviewData.message}</p>

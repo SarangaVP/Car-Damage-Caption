@@ -63,7 +63,7 @@ img:hover {
 
 .image-info {
   font-size: 0.9em;
-  color: #4a5568;
+  color: #4a5568; 
   text-align: center;
   margin: 0;
 }
@@ -116,7 +116,7 @@ textarea:focus {
 }
 
 textarea::placeholder {
-  color: #a0aec0; 
+  color: #a0aec0;
 }
 
 .evaluation {
@@ -128,7 +128,7 @@ textarea::placeholder {
 
 .evaluation p {
   margin: 5px 0;
-  color: #1a202c; 
+  color: #1a202c;
   font-size: 0.95em;
 }
 
@@ -159,7 +159,7 @@ textarea::placeholder {
 }
 
 .btn-primary:hover {
-  background: #2b6cb0;
+  background: #2b6cb0; 
   transform: translateY(-2px);
 }
 
@@ -220,6 +220,40 @@ textarea::placeholder {
     transform: rotate(360deg);
   }
 }
+
+.folder-upload-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.folder-upload-section label {
+  font-size: 1.2em;
+  margin-bottom: 15px;
+}
+
+.folder-upload-section input[type="file"] {
+  display: block;
+  margin: 0 auto;
+  padding: 10px;
+  font-size: 1em;
+  color: #1a202c;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #f7fafc;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.folder-upload-section input[type="file"]:hover {
+  border-color: #3182ce;
+}
+
+.folder-upload-section input[type="file"]:disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
 
 @media (max-width: 768px) {
   .review-grid {

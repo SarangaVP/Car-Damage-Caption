@@ -2,7 +2,8 @@ import os
 import json
 import base64
 import requests
-from fastapi import FastAPI, HTTPException
+import shutil
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -21,9 +22,9 @@ app.add_middleware(
 )
 
 root_folder = "CarData"
-gemma_json_file = "gemma_car_damage_data.json"
-manual_json_file = "manual_car_damage_data.json"
-OPENROUTER_API_KEY = "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"
+generated_json_file = "generated_car_damage_data.json"  
+manual_json_file = "manual_car_damage_data.json"  
+OPENROUTER_API_KEY = "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"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 SITE_URL = "<YOUR_SITE_URL>"
 SITE_NAME = "<YOUR_SITE_NAME>"
@@ -139,8 +140,8 @@ def evaluate_with_pixtral(image_path: str, caption: str) -> dict:
 
 def get_all_images():
     image_extensions = (".jpg", ".jpeg", ".png")
-    gemma_data = load_json(gemma_json_file)
-    existing_paths = {entry["image"] for entry in gemma_data}
+    generated_data = load_json(generated_json_file)  
+    existing_paths = {entry["image"] for entry in generated_data}
     image_files = []
     for folder_name, _, files in os.walk(root_folder):
         for file in files:
@@ -191,17 +192,18 @@ async def post_review(data: ReviewData):
         }
 
     elif data.action == "save":
-        gemma_data = load_json(gemma_json_file)
+        generated_data = load_json(generated_json_file)
         manual_data = load_json(manual_json_file)
 
-        gemma_entry = {"image": data.image_path, "caption": data.gemma_caption, "pixtral_score": data.gemma_score}
-        manual_entry = {"image": data.image_path, "caption": data.manual_caption, "pixtral_score": data.manual_score}
+        # Removed pixtral_score from the entries
+        generated_entry = {"image": data.image_path, "caption": data.gemma_caption}
+        manual_entry = {"image": data.image_path, "caption": data.manual_caption}
 
-        gemma_data.append(gemma_entry)
+        generated_data.append(generated_entry)
         if data.manual_caption:
             manual_data.append(manual_entry)
 
-        save_json(gemma_data, gemma_json_file)
+        save_json(generated_data, generated_json_file) 
         save_json(manual_data, manual_json_file)
 
         image_files = get_all_images()
@@ -219,3 +221,30 @@ async def post_review(data: ReviewData):
         raise HTTPException(status_code=500, detail="Failed to process image with Gemma")
 
     raise HTTPException(status_code=400, detail="Invalid action")
+
+@app.post("/upload_folder")
+async def upload_folder(files: list[UploadFile] = File(...)):
+    try:
+        for file in files:
+            relative_path = file.filename
+            if not relative_path:
+                relative_path = file.filename
+
+            if not file.content_type or not file.content_type.startswith("image/"):
+                print(f"Skipping non-image file: {relative_path}")
+                continue
+
+            target_path = os.path.join(root_folder, relative_path)
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+
+            with open(target_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            print(f"Saved file: {target_path}")
+
+        return {"message": "Folder uploaded successfully"}
+    except Exception as e:
+        print(f"Error in upload_folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error uploading folder: {str(e)}")
+    finally:
+        for file in files:
+            file.file.close()
