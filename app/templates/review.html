@@ -13,12 +13,19 @@
             <p>{{ message }}</p>
             <a href="{{ url_for('index') }}" class="btn">Back to Home</a>
         {% else %}
-            <p>Processing image {{ image_path }} (Remaining: {{ total }})</p> -->
+            <!-- <p>Processing image {{ image_path }} (Remaining: {{ total }})</p> -->
             <div class="image-container">
                 <img src="{{ url_for('serve_image', filename=image_path) }}" alt="Car Image">
             </div>
-            <label for="caption">Condition Description:</label>
-            <textarea id="caption" rows="10" cols="80">{{ caption }}</textarea>
+            <label for="gemma_caption">Gemma Condition Description:</label>
+            <textarea id="gemma_caption" rows="5" cols="80">{{ caption }}</textarea>
+            <div id="gemma_evaluation" class="evaluation"></div>
+
+            <label for="manual_caption">Manual Condition Description:</label>
+            <textarea id="manual_caption" rows="5" cols="80" placeholder="Type your own caption here"></textarea>
+            <div id="manual_evaluation" class="evaluation"></div>
+
+            <button id="checkButton" class="btn">Check</button>
             <button id="saveNext" class="btn">Save and Next</button>
             <p id="status"></p>
         {% endif %}
@@ -26,5 +33,3 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
-
-
