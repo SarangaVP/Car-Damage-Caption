@@ -3,3 +3,8 @@ Flask
 requests
 func-timeout
 python-dotenv
+fastapi
+pydantic
+requests
+python-multipart
+uvicorn

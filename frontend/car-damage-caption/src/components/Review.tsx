@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../App.css';
+import Toast from './Toast';
 
 interface ReviewData {
   image_path: string;
@@ -14,17 +15,53 @@ interface ReviewData {
   done?: boolean;
 }
 
+interface ToastMessage {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+  duration?: number;
+}
+
 const API_BASE_URL = 'http://localhost:8000';
 
 const Review: React.FC = () => {
   const [reviewData, setReviewData] = useState<ReviewData | null>(null);
   const [manualCaption, setManualCaption] = useState<string>('');
-  const [status, setStatus] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [toastId, setToastId] = useState<number>(0);
+  const [currentActionToastId, setCurrentActionToastId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchReview();
   }, []);
+
+  const addToast = (
+    message: string,
+    type: 'success' | 'error' | 'info',
+    duration: number = 3000,
+    clearCurrentAction: boolean = false
+  ) => {
+    if (clearCurrentAction && currentActionToastId !== null) {
+      setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== currentActionToastId));
+      setCurrentActionToastId(null);
+    }
+
+    const newToast = { id: toastId, message, type, duration };
+    setToasts((prevToasts) => [...prevToasts, newToast]);
+    setToastId((prevId) => prevId + 1);
+
+    if (duration === Infinity) {
+      setCurrentActionToastId(toastId);
+    }
+  };
+
+  const removeToast = (id: number) => {
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+    if (id === currentActionToastId) {
+      setCurrentActionToastId(null);
+    }
+  };
 
   const fetchReview = async () => {
     setIsLoading(true);
@@ -33,9 +70,8 @@ const Review: React.FC = () => {
       console.log('Fetch Review Response:', response.data);
       setReviewData(response.data);
       setManualCaption('');
-      setStatus('');
     } catch (error) {
-      setStatus(`Error fetching review: ${(error as Error).message}`);
+      addToast(`Error fetching review: ${(error as Error).message}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +80,7 @@ const Review: React.FC = () => {
   const handleCheck = async () => {
     if (!reviewData || isLoading) return;
     setIsLoading(true);
-    setStatus('Evaluating...');
+    addToast('Evaluating...', 'info', Infinity);
     try {
       const response = await axios.post<Partial<ReviewData>>(`${API_BASE_URL}/review`, {
         action: 'check',
@@ -62,10 +98,10 @@ const Review: React.FC = () => {
       };
       setReviewData(updatedData);
       console.log('Updated reviewData:', updatedData);
-      setStatus('');
+      addToast('Evaluation completed', 'success', 3000, true);
     } catch (error) {
       console.error('Check Error:', error);
-      setStatus(`Error checking: ${(error as Error).message}`);
+      addToast(`Error checking: ${(error as Error).message}`, 'error', 3000, true);
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +110,7 @@ const Review: React.FC = () => {
   const handleSave = async () => {
     if (!reviewData || isLoading) return;
     setIsLoading(true);
-    setStatus('Saving...');
+    addToast('Saving...', 'info', Infinity);
     try {
       const response = await axios.post<ReviewData>(`${API_BASE_URL}/review`, {
         action: 'save',
@@ -91,10 +127,10 @@ const Review: React.FC = () => {
         setReviewData({ ...response.data, gemma_score: null, manual_score: null });
         setManualCaption('');
       }
-      setStatus(response.data.message || 'Saved successfully');
+      addToast(response.data.message || 'Saved successfully', 'success', 3000, true);
     } catch (error) {
       console.error('Save Error:', error);
-      setStatus(`Error saving: ${(error as Error).message}`);
+      addToast(`Error saving: ${(error as Error).message}`, 'error', 3000, true);
     } finally {
       setIsLoading(false);
     }
@@ -105,8 +141,7 @@ const Review: React.FC = () => {
     if (!files || files.length === 0) return;
 
     setIsLoading(true);
-    setStatus('Uploading folder...');
-
+    addToast('Uploading folder...', 'info', Infinity);
     try {
       const formData = new FormData();
       Array.from(files).forEach((file) => {
@@ -119,11 +154,11 @@ const Review: React.FC = () => {
         },
       });
 
-      setStatus('Folder uploaded successfully! Fetching next image...');
+      addToast('Folder uploaded successfully! Fetching next image...', 'success', 3000, true);
       await fetchReview();
     } catch (error) {
       console.error('Folder Upload Error:', error);
-      setStatus(`Error uploading folder: ${(error as Error).message}`);
+      addToast(`Error uploading folder: ${(error as Error).message}`, 'error', 3000, true);
     } finally {
       setIsLoading(false);
       event.target.value = '';
@@ -132,32 +167,47 @@ const Review: React.FC = () => {
 
   const handleDownloadJson = async () => {
     setIsLoading(true);
-    setStatus('Downloading JSON files...');
+    addToast('Downloading JSON files...', 'info', Infinity);
     try {
       const response = await axios.get(`${API_BASE_URL}/download_json`, {
-        responseType: 'blob', // Important for handling binary data (ZIP file)
+        responseType: 'blob',
       });
 
-      // Create a URL for the blob and trigger the download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'car_damage_data.zip'); // Match the filename from the backend
+      link.setAttribute('download', 'car_damage_data.zip');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url); // Clean up the URL object
+      window.URL.revokeObjectURL(url);
 
-      setStatus('JSON files downloaded successfully');
+      addToast('JSON files downloaded successfully', 'success', 3000, true);
     } catch (error) {
       console.error('Download JSON Error:', error);
-      setStatus(`Error downloading JSON files: ${(error as Error).message}`);
+      addToast(`Error downloading JSON files: ${(error as Error).message}`, 'error', 3000, true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!reviewData && !status) return <div className="spinner"></div>;
+  const handleClearJson = async () => {
+    setIsLoading(true);
+    addToast('Clearing JSON files...', 'info', Infinity);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/clear_json`);
+      addToast(response.data.message || 'JSON files cleared successfully', 'success', 3000, true);
+      // Optionally refresh the review data to reflect the cleared state
+      await fetchReview();
+    } catch (error) {
+      console.error('Clear JSON Error:', error);
+      addToast(`Error clearing JSON files: ${(error as Error).message}`, 'error', 3000, true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!reviewData) return <div className="spinner"></div>;
 
   return (
     <div className="container">
@@ -173,7 +223,6 @@ const Review: React.FC = () => {
           onChange={handleFolderUpload}
           disabled={isLoading}
         />
-        {/* Added Download JSON Files button */}
         <button
           className="btn btn-primary"
           onClick={handleDownloadJson}
@@ -181,6 +230,14 @@ const Review: React.FC = () => {
           style={{ marginLeft: '10px' }}
         >
           Download JSON Files
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={handleClearJson}
+          disabled={isLoading}
+          style={{ marginLeft: '10px' }}
+        >
+          Clear JSON Files
         </button>
       </div>
       {reviewData?.done ? (
@@ -236,10 +293,20 @@ const Review: React.FC = () => {
                 Save and Next
               </button>
             </div>
-            {status && <p className="status">{status}</p>}
           </div>
         </div>
       )}
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+            duration={toast.duration}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -25,7 +25,7 @@ app.add_middleware(
 root_folder = "CarData"
 generated_json_file = "generated_car_damage_data.json"
 manual_json_file = "manual_car_damage_data.json"
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 SITE_URL = "<YOUR_SITE_URL>"
 SITE_NAME = "<YOUR_SITE_NAME>"
@@ -290,3 +290,16 @@ async def download_json(background_tasks: BackgroundTasks):
             os.remove(zip_filename)
         print(f"Error creating ZIP file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating ZIP file: {str(e)}")
+
+@app.post("/clear_json")
+async def clear_json_files():
+    try:
+        with open(generated_json_file, 'w') as f:
+            json.dump([], f)
+
+        with open(manual_json_file, 'w') as f:
+            json.dump([], f)
+
+        return {"message": "JSON files cleared successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing JSON files: {str(e)}")

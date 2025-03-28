@@ -5,10 +5,10 @@ venv/
 
 app/CarData/
 app/car_damage_data.json
-app/gemma_damage_data.json
-app/manual_damage_data.json
+app/gemma_car_damage_data.json
+app/manual_car_damage_data.json
 
 backend/CarData/
-backend/gemma_damage_data.json
-backend/manual_damage_data.json
+backend/generated_car_damage_data.json
+backend/manual_car_damage_data.json
 backend/__pycache__
