@@ -22,7 +22,8 @@ interface ToastMessage {
   duration?: number;
 }
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000';  
+// http://127.0.0.1:8000
 
 const Review: React.FC = () => {
   const [reviewData, setReviewData] = useState<ReviewData | null>(null);
@@ -197,7 +198,6 @@ const Review: React.FC = () => {
     try {
       const response = await axios.post(`${API_BASE_URL}/clear_json`);
       addToast(response.data.message || 'JSON files cleared successfully', 'success', 3000, true);
-      // Optionally refresh the review data to reflect the cleared state
       await fetchReview();
     } catch (error) {
       console.error('Clear JSON Error:', error);
@@ -213,37 +213,39 @@ const Review: React.FC = () => {
     <div className="container">
       <h1>Car Damage Review</h1>
       <div className="folder-upload-section">
-        <label htmlFor="folder-upload">Upload a Folder of Images</label>
-        <input
-          type="file"
-          id="folder-upload"
-          // @ts-ignore: webkitdirectory is a non-standard attribute
-          webkitdirectory="true"
-          directory="true"
-          onChange={handleFolderUpload}
-          disabled={isLoading}
-        />
-        <button
-          className="btn btn-primary"
-          onClick={handleDownloadJson}
-          disabled={isLoading}
-          style={{ marginLeft: '10px' }}
-        >
-          Download JSON Files
-        </button>
-        <button
-          className="btn btn-secondary"
-          onClick={handleClearJson}
-          disabled={isLoading}
-          style={{ marginLeft: '10px' }}
-        >
-          Clear JSON Files
-        </button>
+        <div className="upload-input-wrapper">
+          <label htmlFor="folder-upload">Upload Image Folder</label>
+          <input
+            type="file"
+            id="folder-upload"
+            // @ts-ignore: webkitdirectory is a non-standard attribute
+            webkitdirectory="true"
+            directory="true"
+            onChange={handleFolderUpload}
+            disabled={isLoading}
+          />
+        </div>
+        <div className="button-group">
+          <button
+            className="btn btn-primary"
+            onClick={handleDownloadJson}
+            disabled={isLoading}
+          >
+            Download JSON Files
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleClearJson}
+            disabled={isLoading}
+          >
+            Clear JSON Files
+          </button>
+        </div>
       </div>
       {reviewData?.done ? (
         <div className="done-message">
           <p>{reviewData.message}</p>
-          <a href="/" className="btn btn-primary">Back to Home</a>
+          {/* <a href="/" className="btn btn-primary">Back to Home</a> */}
         </div>
       ) : (
         <div className="review-grid">

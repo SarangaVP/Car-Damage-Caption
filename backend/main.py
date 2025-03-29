@@ -25,7 +25,7 @@ app.add_middleware(
 root_folder = "CarData"
 generated_json_file = "generated_car_damage_data.json"
 manual_json_file = "manual_car_damage_data.json"
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = ""  # Add your OpenRouter API key here
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 SITE_URL = "<YOUR_SITE_URL>"
 SITE_NAME = "<YOUR_SITE_NAME>"
